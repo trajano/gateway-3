@@ -1,27 +1,30 @@
 package com.example.demo;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cloud.client.DefaultServiceInstance;
 import org.springframework.cloud.client.ServiceInstance;
-import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.cloud.client.discovery.ReactiveDiscoveryClient;
-import org.springframework.cloud.gateway.discovery.DiscoveryLocatorProperties;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
 import javax.annotation.PostConstruct;
-import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class MyDiscoveryClient implements ReactiveDiscoveryClient {
-    private final DiscoveryLocatorProperties discoveryLocatorProperties;
 
-    public MyDiscoveryClient(final DiscoveryLocatorProperties discoveryLocatorProperties) {
-        this.discoveryLocatorProperties = discoveryLocatorProperties;
-    }
+    private final Map<String, Set<ServiceInstance>> services = new ConcurrentHashMap<>();
 
     @PostConstruct
     public void hello() {
-        System.out.println("Hello world" + discoveryLocatorProperties);
+        services.put("sample", Set.of(new DefaultServiceInstance(
+                "instanceId",
+                "sample",
+                "foo.com",
+                8080,
+                false
+        )));
     }
 
     @Override
@@ -31,14 +34,13 @@ public class MyDiscoveryClient implements ReactiveDiscoveryClient {
 
     @Override
     public Flux<ServiceInstance> getInstances(String serviceId) {
-        System.out.println("getInstances()" + serviceId);
-        return Flux.just();
+        System.out.println(serviceId);
+        return Flux.fromIterable(services.getOrDefault(serviceId, Set.of()));
     }
 
     @Override
     public Flux<String> getServices() {
-        System.out.println("getServices()");
-        return Flux.just();
+        return Flux.fromIterable(services.keySet());
     }
 
 }
